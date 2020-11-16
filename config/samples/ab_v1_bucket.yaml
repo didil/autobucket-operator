@@ -1,0 +1,7 @@
+apiVersion: ab.leclouddev.com/v1
+kind: Bucket
+metadata:
+  name: bucket-sample
+spec:
+  # Add fields here
+  foo: bar
