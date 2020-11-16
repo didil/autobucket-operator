@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,8 +28,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	abv1 "github.com/didil/autobucket-operator/api/v1"
 	"github.com/didil/autobucket-operator/controllers"
+	"github.com/didil/autobucket-operator/lib"
+	"github.com/didil/autobucket-operator/services"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -41,10 +46,21 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(abv1.AddToScheme(scheme))
+	utilruntime.Must(appsv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
+	// try load env if .env file found
+	err := lib.LoadEnv(".env")
+	if err != nil {
+		// skip file not found errors to allow .env file to be optional
+		if err.Error() != fmt.Sprintf("open .env: no such file or directory") {
+			setupLog.Error(err, "unable to load env")
+			os.Exit(1)
+		}
+	}
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -67,12 +83,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	// init services
+	gcpSvc, err := services.NewGCPService()
+	if err != nil {
+		setupLog.Error(err, "unable to init gcp service")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.BucketReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Bucket"),
 		Scheme: mgr.GetScheme(),
+		GCPSvc: gcpSvc,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Bucket")
+		os.Exit(1)
+	}
+	if err = (&controllers.DeploymentReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Deployment"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

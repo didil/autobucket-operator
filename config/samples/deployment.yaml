@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bucket-text-api
+  labels:
+    app: bucket-text-api
+  annotations:
+    ab.leclouddev.com/cloud: gcp
+    ab.leclouddev.com/name-prefix: ab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bucket-text-api
+  template:
+    metadata:
+      labels:
+        app: bucket-text-api
+    spec:
+      containers:
+      - name: bucket-text-api
+        image: quay.io/didil/bucket-text-api

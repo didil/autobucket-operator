@@ -26,27 +26,31 @@ import (
 // BucketSpec defines the desired state of Bucket
 type BucketSpec struct {
 	// cloud platform
-	// +kubebuilder:validation:Enum=GCP
+	// +kubebuilder:validation:Enum=gcp
 	// +kubebuilder:validation:Required
-	Cloud string `json:"cloud"`
+	Cloud BucketCloud `json:"cloud"`
+
+	// +kubebuilder:validation:Required
+	FullName string `json:"fullName"`
 }
 
-// BucketState enum
-type BucketState string
+type BucketCloud string
 
-// BucketStatePending corresponding to a bucket pending creation
-const BucketStatePending BucketState = "Pending"
-
-// BucketStateCreated corresponding to a bucket that has been created successfully
-const BucketStateCreated BucketState = "Created"
+const (
+	// BucketCloudGCP gcp cloud
+	BucketCloudGCP BucketCloud = "gcp"
+)
 
 // BucketStatus defines the observed state of Bucket
 type BucketStatus struct {
-	State BucketState `json:"state,omitempty"`
+	CreatedAt string `json:"createdAt,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Cloud",type=string,JSONPath=`.spec.cloud`
+// +kubebuilder:printcolumn:name="FullName",type=string,JSONPath=`.spec.fullName`
+// +kubebuilder:printcolumn:name="CreatedAt",type=string,JSONPath=`.status.createdAt`
 
 // Bucket is the Schema for the buckets API
 type Bucket struct {

@@ -22,3 +22,10 @@ bin
 *.swp
 *.swo
 *~
+
+# dotenv files
+.env*
+!.env.example
+
+# gcp service acocunt
+sa*.json

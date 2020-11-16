@@ -121,3 +121,7 @@ bundle: manifests kustomize
 .PHONY: bundle-build
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+.PHONY: mockery
+mockery:
+	mockery --dir "./services" --all --output "./testsupport/mocks"
