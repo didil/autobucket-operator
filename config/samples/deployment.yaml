@@ -20,3 +20,26 @@ spec:
       containers:
       - name: bucket-text-api
         image: quay.io/didil/bucket-text-api
+        ports:
+          - containerPort: 8000
+        env:
+          - name: PORT
+            value: "8000"
+          - name: GCP_PROJECT
+            value : autobucket-demo
+          - name: BUCKET_NAME
+            value: ab-default-bucket-text-api
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /var/secrets/gcp/sa.json
+        volumeMounts:
+          - mountPath: /var/secrets/gcp
+            name: storage-writer-key
+        resources:
+          limits:
+            cpu: "500m"            
+            memory: "128Mi"
+      volumes:
+        - name: storage-writer-key
+          # this secret was created separately using `kubectl create secret generic storage-writer-key --from-file=sa.json=sa.json`
+          secret:
+            secretName: storage-writer-key
