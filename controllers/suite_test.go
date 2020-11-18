@@ -32,7 +32,10 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	abv1 "github.com/didil/autobucket-operator/api/v1"
+	"github.com/didil/autobucket-operator/testsupport/mocks"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -42,6 +45,7 @@ import (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
+var gcpSvc = new(mocks.GCPSvc)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -71,6 +75,33 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
+
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: ":8081",
+		Port:               9444,
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&DeploymentReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Deployment"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&BucketReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Bucket"),
+		Scheme: mgr.GetScheme(),
+		GCPSvc: gcpSvc,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		err = mgr.Start(ctrl.SetupSignalHandler())
+		Expect(err).ToNot(HaveOccurred())
+	}()
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).ToNot(HaveOccurred())
