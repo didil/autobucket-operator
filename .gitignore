@@ -29,3 +29,6 @@ bin
 
 # gcp service acocunt
 sa*.json
+
+# manager patch
+config/manager/manager.yaml

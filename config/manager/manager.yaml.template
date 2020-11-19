@@ -38,7 +38,7 @@ spec:
             memory: 64Mi
         env:
         - name: GCP_PROJECT
-          value: autobucket-demo
+          value: $GCP_PROJECT
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/gcp/sa-operator.json
         volumeMounts:
