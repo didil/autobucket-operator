@@ -1,7 +1,9 @@
 # Autobucket Operator
 Kubernetes Operator that automatically creates and manages Cloud Buckets (Object Storage) for k8s Deployments. Built with Go and Operator SDK.
 
-[![Build Status](https://travis-ci.org/didil/kubexcloud.svg?branch=master)](https://travis-ci.org/didil/kubexcloud)
+[![Build Status](https://travis-ci.org/didil/autobucket-operator.svg?branch=master)](https://travis-ci.org/didil/autobucket-operator)
+
+This repository is a companion repo for the article: [Autobucket Operator: Building a Cloud Storage Kubernetes Operator with Go and Operator SDK](https://didil.medium.com/autobucket-operator-7e77eca95fcc)
 
 **THIS SOFTWARE IS WORK IN PROGRESS / ALPHA RELEASE AND IS NOT MEANT FOR USAGE IN PRODUCTION SYSTEMS**
 
