@@ -25,14 +25,16 @@ import (
 
 // BucketSpec defines the desired state of Bucket
 type BucketSpec struct {
-	// cloud platform
+	// Cloud platform
 	// +kubebuilder:validation:Enum=gcp
 	// +kubebuilder:validation:Required
 	Cloud BucketCloud `json:"cloud"`
 
+	// FullName is the cloud storage bucket full name
 	// +kubebuilder:validation:Required
 	FullName string `json:"fullName"`
 
+	// OnDeletePolicy defines the behavior when the Deployment/Bucket objects are deleted
 	// +kubebuilder:validation:Enum=destroy;ignore
 	// +kubebuilder:validation:Required
 	OnDeletePolicy BucketOnDeletePolicy `json:"onDeletePolicy"`
@@ -47,6 +49,7 @@ const (
 
 // BucketStatus defines the observed state of Bucket
 type BucketStatus struct {
+	// CreatedAt is the cloud storage bucket creation time
 	CreatedAt string `json:"createdAt,omitempty"`
 }
 

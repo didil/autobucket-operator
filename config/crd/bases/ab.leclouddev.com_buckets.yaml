@@ -47,13 +47,16 @@ spec:
           description: BucketSpec defines the desired state of Bucket
           properties:
             cloud:
-              description: cloud platform
+              description: Cloud platform
               enum:
               - gcp
               type: string
             fullName:
+              description: FullName is the cloud storage bucket full name
               type: string
             onDeletePolicy:
+              description: OnDeletePolicy defines the behavior when the Deployment/Bucket
+                objects are deleted
               enum:
               - destroy
               - ignore
@@ -67,6 +70,7 @@ spec:
           description: BucketStatus defines the observed state of Bucket
           properties:
             createdAt:
+              description: CreatedAt is the cloud storage bucket creation time
               type: string
           type: object
       type: object
