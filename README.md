@@ -60,7 +60,7 @@ Deploy resources and controller manager
 # install the k8s resources
 $ make install
 # deploy the controller manager
-$ GCP_PROJECT=autobucket-demo make deploy
+$ GCP_PROJECT=$GCP_PROJECT make deploy
 ````
 
 ## Usage
