@@ -32,6 +32,10 @@ type BucketSpec struct {
 
 	// +kubebuilder:validation:Required
 	FullName string `json:"fullName"`
+
+	// +kubebuilder:validation:Enum=destroy;ignore
+	// +kubebuilder:validation:Required
+	OnDeletePolicy BucketOnDeletePolicy `json:"onDeletePolicy"`
 }
 
 type BucketCloud string
@@ -45,6 +49,15 @@ const (
 type BucketStatus struct {
 	CreatedAt string `json:"createdAt,omitempty"`
 }
+
+type BucketOnDeletePolicy string
+
+const (
+	// BucketOnDeletePolicyIgnore ignore object deleted
+	BucketOnDeletePolicyIgnore BucketOnDeletePolicy = "ignore"
+	// BucketOnDeletePolicyDestroy destroy storage bucket on object delete
+	BucketOnDeletePolicyDestroy BucketOnDeletePolicy = "destroy"
+)
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

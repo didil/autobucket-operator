@@ -1,7 +1,7 @@
 language: go
 
 os: linux
-dist: focal
+dist: bionic
 
 branches:
   only:

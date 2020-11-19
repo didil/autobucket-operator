@@ -53,9 +53,15 @@ spec:
               type: string
             fullName:
               type: string
+            onDeletePolicy:
+              enum:
+              - destroy
+              - ignore
+              type: string
           required:
           - cloud
           - fullName
+          - onDeletePolicy
           type: object
         status:
           description: BucketStatus defines the observed state of Bucket

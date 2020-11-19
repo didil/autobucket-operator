@@ -62,6 +62,55 @@ func (r *BucketReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	// examine DeletionTimestamp to determine if object is under deletion
+	if bucket.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+
+		if !containsString(bucket.ObjectMeta.Finalizers, bucketFinalizerName) {
+			bucket.ObjectMeta.Finalizers = append(bucket.ObjectMeta.Finalizers, bucketFinalizerName)
+			if err := r.Update(ctx, bucket); err != nil {
+				log.Error(err, "Failed to update bucket finalizers")
+				return ctrl.Result{}, err
+			}
+
+			// Object updated - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+	} else {
+		// The object is being deleted
+		if containsString(bucket.ObjectMeta.Finalizers, bucketFinalizerName) {
+			// our finalizer is present, delete bucket
+			if bucket.Spec.OnDeletePolicy == abv1.BucketOnDeletePolicyDestroy {
+				log.Info("Deleting Storage Bucket", "Bucket.Cloud", bucket.Spec.Cloud, "Bucket.Name", bucket.Name)
+
+				switch bucket.Spec.Cloud {
+				case abv1.BucketCloudGCP:
+					err := r.deleteGCPBucket(ctx, bucket)
+					if err != nil {
+						log.Error(err, "Failed to delete gcp Bucket", "Bucket.Name", bucket.Name)
+						return ctrl.Result{}, err
+					}
+				default:
+					log.Info("Bucket Cloud unknown.", "Bucket.Cloud", bucket.Spec.Cloud)
+					return ctrl.Result{}, nil
+				}
+			}
+
+			// remove our finalizer from the list and update it.
+			bucket.ObjectMeta.Finalizers = removeString(bucket.ObjectMeta.Finalizers, bucketFinalizerName)
+			if err := r.Update(context.Background(), bucket); err != nil {
+				log.Error(err, "Failed to delete bucket finalizer")
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
+
+	// check if the storage bucket has been created yet
 	if bucket.Status.CreatedAt == "" {
 		// bucket not yet created
 		log.Info("Creating Bucket", "Bucket.Cloud", bucket.Spec.Cloud, "Bucket.Name", bucket.Name)
@@ -92,9 +141,21 @@ func (r *BucketReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
+const bucketFinalizerName = "ab.leclouddev.com/bucket-finalizer"
+
 func (r *BucketReconciler) createGCPBucket(ctx context.Context, bucket *abv1.Bucket) error {
 	// create bucket
 	err := r.GCPSvc.CreateBucket(ctx, bucket.Spec.FullName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *BucketReconciler) deleteGCPBucket(ctx context.Context, bucket *abv1.Bucket) error {
+	// delete bucket
+	err := r.GCPSvc.DeleteGCPBucket(ctx, bucket.Spec.FullName)
 	if err != nil {
 		return err
 	}
@@ -106,4 +167,23 @@ func (r *BucketReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&abv1.Bucket{}).
 		Complete(r)
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
 }

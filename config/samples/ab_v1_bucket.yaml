@@ -5,3 +5,4 @@ metadata:
 spec:
   cloud: gcp
   fullName: ab-default-bucket-sample
+  onDeletePolicy: destroy

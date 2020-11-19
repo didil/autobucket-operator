@@ -68,19 +68,12 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, nil
 	}
 
-	bucketNamePrefix := dep.Annotations[bucketNamePrefixKey]
-	if bucketNamePrefix == "" {
-		bucketNamePrefix = "ab"
-	}
-
-	bucketFullName := bucketFullName(bucketNamePrefix, req.Namespace, dep.Name)
-
 	// Check if the bucket object already exists, if not create a new one
 	bucket := &abv1.Bucket{}
 	err = r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, bucket)
 	if err != nil && errors.IsNotFound(err) {
 		// Define new
-		bucket, err := r.bucketForDeployment(dep, bucketCloud, bucketFullName)
+		bucket, err := r.bucketForDeployment(dep)
 		if err != nil {
 			log.Error(err, "Failed to build new Bucket", "Bucket.Name", dep.Name)
 			return ctrl.Result{}, err
@@ -100,6 +93,22 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, err
 	}
 
+	// check if bucket ondelete policy must be updated
+	bucketOnDeletePolicy := abv1.BucketOnDeletePolicy(dep.Annotations[bucketOnDeletePolicyKey])
+	if bucketOnDeletePolicy != bucket.Spec.OnDeletePolicy {
+		bucket.Spec.OnDeletePolicy = bucketOnDeletePolicy
+
+		log.Info("Updating Bucket OnDeletePolicy", "Bucket.Name", bucket.Name, "Bucket.OnDeletePolicy", bucketOnDeletePolicy)
+
+		if err := r.Update(context.Background(), bucket); err != nil {
+			log.Error(err, "Failed to update bucket")
+			return ctrl.Result{}, err
+		}
+
+		// updated successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -109,10 +118,24 @@ func bucketFullName(prefix, namespace, depName string) string {
 
 const bucketCloudKey = "ab.leclouddev.com/cloud"
 const bucketNamePrefixKey = "ab.leclouddev.com/name-prefix"
+const bucketOnDeletePolicyKey = "ab.leclouddev.com/on-delete-policy"
 
 // bucketForDeployment returns a Bucket object
-func (r *DeploymentReconciler) bucketForDeployment(dep *appsv1.Deployment, bucketCloud abv1.BucketCloud, bucketFullName string) (*abv1.Bucket, error) {
+func (r *DeploymentReconciler) bucketForDeployment(dep *appsv1.Deployment) (*abv1.Bucket, error) {
 	labels := labelsForBucket(dep.Name)
+
+	bucketCloud := abv1.BucketCloud(dep.Annotations[bucketCloudKey])
+
+	bucketNamePrefix := dep.Annotations[bucketNamePrefixKey]
+	if bucketNamePrefix == "" {
+		bucketNamePrefix = "ab"
+	}
+
+	bucketFullName := bucketFullName(bucketNamePrefix, dep.Namespace, dep.Name)
+	bucketOnDeletePolicy := abv1.BucketOnDeletePolicy(dep.Annotations[bucketOnDeletePolicyKey])
+	if bucketOnDeletePolicy == "" {
+		bucketOnDeletePolicy = abv1.BucketOnDeletePolicyIgnore
+	}
 
 	bucket := &abv1.Bucket{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,8 +144,9 @@ func (r *DeploymentReconciler) bucketForDeployment(dep *appsv1.Deployment, bucke
 			Labels:    labels,
 		},
 		Spec: abv1.BucketSpec{
-			Cloud:    bucketCloud,
-			FullName: bucketFullName,
+			Cloud:          bucketCloud,
+			FullName:       bucketFullName,
+			OnDeletePolicy: bucketOnDeletePolicy,
 		},
 	}
 	// Set Project instance as the owner and controller

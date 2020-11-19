@@ -42,8 +42,9 @@ var _ = Describe("Deployment controller", func() {
 					Name:      DeploymentName,
 					Namespace: NamespaceName,
 					Annotations: map[string]string{
-						"ab.leclouddev.com/cloud":       "gcp",
-						"ab.leclouddev.com/name-prefix": "abtest",
+						"ab.leclouddev.com/cloud":            "gcp",
+						"ab.leclouddev.com/name-prefix":      "abtest",
+						"ab.leclouddev.com/on-delete-policy": "ignore",
 					},
 				},
 				Spec: appsv1.DeploymentSpec{

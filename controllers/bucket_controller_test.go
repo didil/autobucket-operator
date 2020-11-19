@@ -26,7 +26,7 @@ var _ = Describe("Bucket controller", func() {
 	Context("When creating a bucket", func() {
 		var bucket *abv1.Bucket
 
-		It("Should create the cloud bucket", func() {
+		It("Should create the storage bucket", func() {
 			ctx := context.Background()
 
 			gcpSvc.On("CreateBucket", mock.AnythingOfType("*context.emptyCtx"), BucketFullName).Return(nil)
@@ -37,8 +37,9 @@ var _ = Describe("Bucket controller", func() {
 					Namespace: NamespaceName,
 				},
 				Spec: abv1.BucketSpec{
-					Cloud:    abv1.BucketCloudGCP,
-					FullName: BucketFullName,
+					Cloud:          abv1.BucketCloudGCP,
+					FullName:       BucketFullName,
+					OnDeletePolicy: abv1.BucketOnDeletePolicyIgnore,
 				},
 			}
 			Expect(k8sClient.Create(ctx, bucket)).Should(Succeed())
