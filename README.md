@@ -11,7 +11,12 @@ To run tests:
 $ make test
 ````
 
+
+
 ## Run locally
 ````
-$ 
+# deploy the k8s resources
+$ make deploy
+# run the operator locally
+$ make run
 ````
